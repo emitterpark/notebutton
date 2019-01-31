@@ -8,6 +8,7 @@
     "start": "tabris serve"
   },
   "dependencies": {
+    "paho-mqtt": "^1.1.0",
     "tabris": "^2.6.2"
   },
   "devDependencies": {
