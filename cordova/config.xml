@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="emitterpark.notebutton" version="0.1.0">
+  <name>Notebutton</name>
+  <description>
+    notebutton IoT note taking App
+  </description>
+  <author email="42601356+emitterpark@users.noreply.github.com">
+    emitterpark
+  </author>
+  <preference name="EnableDeveloperConsole" value="$IS_DEBUG" />
+</widget>
