@@ -1,5 +1,23 @@
-const {Action,NavigationView,ScrollView,Page,Button,TextInput,TextView,Composite,AlertDialog,ActivityIndicator,ui} = require('tabris')
+const {Action,NavigationView,CollectionView,Page,Button,TextInput,TextView,Composite,AlertDialog,ActivityIndicator,ui} = require('tabris')
 const Paho = require('paho-mqtt')
+//////////////////////////////
+let incoming = ''
+let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
+mqtt.onMessageArrived = onMessageArrived
+function onMessageArrived(message) {
+  console.log('from:', message.destinationName, message.payloadString)
+  incoming = message.payloadString
+  messageView.insert(messageView.itemCount + 1)
+  messageView.reveal(messageView.itemCount - 1)
+
+}
+mqttConnect()
+function mqttConnect() {   
+  mqtt.connect({onSuccess:onConnect})
+  function onConnect() {
+    mqtt.subscribe(localStorage.getItem('topic'))      
+  }
+}
 //////////////////////////////
 let navigationView = new NavigationView({
   left: 0, top: 0, right: 0, bottom: 0
@@ -9,12 +27,27 @@ let homePage = new Page({
   title: 'Home'  
 }).appendTo(navigationView)
 
-let logScroll = new ScrollView({
-  left: 0, right: 0, top: 0, bottom: 0,
-  direction: 'vertical'
-}).appendTo(homePage);
+let messageView = new CollectionView({
+  left: 0, top: 0, right: 0, bottom: 0,
+  cellHeight: screen.height / 7,
+  createCell: () => {
+    let cell = new Composite()
+    new TextView({
+      left: 10     
+    }).appendTo(cell)
+    
+    return cell
+  },
+  updateCell: (cell, index) => {
+    cell.apply({
+      TextView: {text: incoming + index}
+    })    
+  }
+}).on('select', ({index}) => console.log('selected'))
+  .appendTo(homePage)
 //////////////////////////////
-new Action({  
+new Action({
+  //title: 'Settings',
   image: {
     src: device.platform === 'iOS' ? 'resources/share-black-24dp@3x.png' : 'resources/share-white-24dp@3x.png',
     scale: 3
@@ -244,25 +277,3 @@ function createSettings () {
 
 }
 //////////////////////////////
-let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
-mqtt.onMessageArrived = onMessageArrived
-function onMessageArrived(message) {
-  console.log('from:', message.destinationName, message.payloadString)  
-  let log = new Composite({
-    top: 'prev()', left: 0, right: 0, height: screen.height / 7    
-  }).appendTo(logScroll)
-  new TextView({
-    text: message.payloadString
-  }).appendTo(log)
-  new Composite({
-    top: 'prev()', left: 0, right: 0, height: 1,
-    background: 'gray'
-  }).appendTo(logScroll)  
-}
-mqttConnect()
-function mqttConnect() {   
-  mqtt.connect({onSuccess:onConnect})
-  function onConnect() {
-    mqtt.subscribe(localStorage.getItem('topic'))      
-  }
-}
