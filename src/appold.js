@@ -1,6 +1,15 @@
 const {Action,NavigationView,Page,Button,TextInput,TextView,Composite,AlertDialog,ActivityIndicator,ui} = require('tabris')
 const Paho = require('paho-mqtt')
-let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
+let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', "notebuttonapp")
+
+let configs = {'ssid':'','password':'','client':'mqtt','ssl':'false',
+              'broker':'iot.eclipse.org','clientid':'notebutton','topic':'','message':''}
+const urlConfigs = 'http://192.168.4.1/configs'
+
+configs.ssid = localStorage.getItem('ssid')
+configs.password = localStorage.getItem('password')
+configs.topic = localStorage.getItem('topic')
+configs.message = localStorage.getItem('message')
 
 mqtt.onMessageArrived = onMessageArrived
 function onMessageArrived(message) {
@@ -10,7 +19,7 @@ mqttConnect()
 function mqttConnect() {   
   mqtt.connect({onSuccess:onConnect})
   function onConnect() {
-    mqtt.subscribe(localStorage.getItem('topic'))      
+    mqtt.subscribe(configs.topic)  
   }
 }
 //////////////////////////////
@@ -46,10 +55,10 @@ function createSettings () {
   
   let ssid = new TextInput({  
     top: 45, left:10, right: 10, 
-    text: localStorage.getItem('ssid'), 
+    text: configs.ssid, 
     font: '20px'
   }).on('textChanged', event => {
-    localStorage.setItem('ssid', event.target.text)    
+    configs.ssid = event.target.text    
   }).appendTo(settingsPage)
   
   new TextView({
@@ -60,10 +69,10 @@ function createSettings () {
   
   let password = new TextInput({  
     top: 105, left:10, right: 10,
-    text: localStorage.getItem('password'),  
+    text: configs.password,  
     font: '20px'
   }).on('textChanged', event => {
-    localStorage.setItem('password', event.target.text)    
+    configs.password = event.target.text    
   }).appendTo(settingsPage)
 
   new TextView({
@@ -74,10 +83,10 @@ function createSettings () {
   
   let topic = new TextInput({  
     top: 165, left:10, right: 10,
-    text: localStorage.getItem('topic'), 
+    text: configs.topic,  
     font: '20px'
   }).on('textChanged', event => {
-    localStorage.setItem('topic', event.target.text)    
+    configs.topic = event.target.text    
   }).appendTo(settingsPage)
 
   new TextView({
@@ -88,18 +97,25 @@ function createSettings () {
   
   let message = new TextInput({  
     top: 225, left:10, right: 10,
-    text: localStorage.getItem('message'),  
+    text: configs.message,  
     font: '20px'
   }).on('textChanged', event => {
-    localStorage.setItem('message', event.target.text)    
+    configs.message = event.target.text    
   }).appendTo(settingsPage)
 
   let clear = new Button({  
     top: 290, left: 8, width: 80,
     text: 'CLEAR'
   }).on('select', event => {    
-    localStorage.clear()    
+    clearall()    
   }).appendTo(settingsPage)
+
+  function clearall() {
+    ssid.text = ''
+    password.text = ''
+    topic.text = ''
+    message.text = ''   
+  }
 
   let download = new Button({  
     top: 290, left: 'prev()', width: 105,
@@ -115,7 +131,7 @@ function createSettings () {
         }, ms)
       })
       return Promise.race([
-        fetch('http://192.168.4.1/configs', {
+        fetch(urlConfigs, {
           method: 'GET'    
         }),
         timeout
@@ -124,6 +140,7 @@ function createSettings () {
     let result = raceTimeout(5000)
     result.then(res => res.json())    
     .then(response => {      
+      clearall()
       ssid.text = response.ssid
       password.text = response.password
       topic.text = response.topic
@@ -154,14 +171,10 @@ function createSettings () {
     act.visible = true
     settingsPage.enabled = false 
     let sendConfigs = {}
-    sendConfigs.ssid = localStorage.getItem('ssid')
-    sendConfigs.password = localStorage.getItem('password')
-    sendConfigs.client = 'mqtt'
-    sendConfigs.ssl = 'false'
-    sendConfigs.broker = 'iot.eclipse.org'
-    sendConfigs.clientid = ''
-    sendConfigs.topic = localStorage.getItem('topic')
-    sendConfigs.message = localStorage.getItem('message')
+    sendConfigs.ssid = configs.ssid
+    sendConfigs.password = configs.password
+    sendConfigs.topic = configs.topic
+    sendConfigs.message = configs.message
     let raceTimeout = function(ms){
       let timeout = new Promise((resolve, reject) => {
         let id = setTimeout(() => {
@@ -170,7 +183,7 @@ function createSettings () {
         }, ms)
       })
       return Promise.race([
-        fetch('http://192.168.4.1/configs', {
+        fetch(urlConfigs, {
           method: 'POST',
           body: JSON.stringify(sendConfigs),
           headers:{'Content-Type': 'application/json'}
@@ -215,7 +228,7 @@ function createSettings () {
         }, ms)
       })
       return Promise.race([
-        fetch('http://192.168.4.1/configs', {
+        fetch(urlConfigs, {
           method: 'POST',
           body: JSON.stringify(sendConfigs),
           headers:{'Content-Type': 'application/json'}
