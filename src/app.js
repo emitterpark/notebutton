@@ -32,13 +32,14 @@ function createSettings () {
   new TextView({
     top: 35, left:10, 
     text: 'SSID',
-    font: '16px'
+    textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
   let ssid = new TextInput({  
     top: 45, left:10, right: 10, 
     text: localStorage.getItem('ssid'), 
-    font: '20px'
+    font: '20px',
+    borderColor: 'gray'
   }).on('textChanged', event => {
     localStorage.setItem('ssid', event.target.text)    
   }).appendTo(settingsPage)
@@ -46,13 +47,14 @@ function createSettings () {
   new TextView({
     top: 95, left:10,  
     text: 'Password',
-    font: '16px'
+    textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
   let password = new TextInput({  
     top: 105, left:10, right: 10,
     text: localStorage.getItem('password'),  
-    font: '20px'
+    font: '20px',
+    borderColor: 'gray'
   }).on('textChanged', event => {
     localStorage.setItem('password', event.target.text)    
   }).appendTo(settingsPage)
@@ -60,13 +62,14 @@ function createSettings () {
   new TextView({
     top: 155, left:10,
     text: 'Topic',
-    font: '16px'
+    textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
   let topic = new TextInput({  
     top: 165, left:10, right: 10,
     text: localStorage.getItem('topic'), 
-    font: '20px'
+    font: '20px',
+    borderColor: 'gray'
   }).on('textChanged', event => {
     localStorage.setItem('topic', event.target.text)    
   }).appendTo(settingsPage)
@@ -74,13 +77,14 @@ function createSettings () {
   new TextView({
     top: 215, left:10,
     text: 'Button',
-    font: '16px'
+    textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
   let message = new TextInput({  
     top: 225, left:10, right: 10,
     text: localStorage.getItem('message'),  
-    font: '20px'
+    font: '20px',
+    borderColor: 'gray'
   }).on('textChanged', event => {
     localStorage.setItem('message', event.target.text)    
   }).appendTo(settingsPage)
@@ -247,17 +251,50 @@ function createSettings () {
 let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived
 function onMessageArrived(message) {
-  console.log('from:', message.destinationName, message.payloadString)  
+  console.log('from:', message.destinationName, message.payloadString) 
+  let date = new Date() 
+  let elapsedcounter = 0
   let log = new Composite({
-    top: 'prev()', left: 0, right: 0, height: screen.height / 7    
+    top: 'prev() 10', left: 100, right: 100, height: 90,
+    background: 'rgba(0, 0, 255, 0.2)', cornerRadius: 20  
+  }).on('tap', event => {
+    console.log('select')
+    event.target.set('background', 'rgba(255, 0, 0, 0.2)')
+  }).on('swipeRight', event => {
+    console.log('swipeRight')
+    clearInterval(elapsed)
+    event.target.dispose()    
   }).appendTo(logScroll)
   new TextView({
-    text: message.payloadString
+    id: 'elapsedtext',
+    top: 23, left: 100,
+    text: elapsedcounter + 'm',
+    alignment: 'left'
   }).appendTo(log)
-  new Composite({
-    top: 'prev()', left: 0, right: 0, height: 1,
-    background: 'gray'
-  }).appendTo(logScroll)  
+  new TextView({
+    top: 5, centerX: 0,
+    text: date.toLocaleDateString(),
+    alignment: 'center', textColor: 'gray'
+  }).appendTo(log)
+  new TextView({
+    top: 20, centerX: 0,
+    text: date.toLocaleTimeString().split(' ')[0],
+    alignment: 'center', textColor: 'gray'    
+  }).appendTo(log)
+  new TextView({
+    top: 35, centerX: 0,
+    text: message.destinationName,
+    alignment: 'center', textColor: 'gray'
+  }).appendTo(log) 
+  new TextView({
+    top: 50, centerX: 0,
+    text: message.payloadString,
+    alignment: 'center', font: '24px'
+  }).appendTo(log)    
+  let elapsed = setInterval(() => {
+    elapsedcounter += 1
+    log.find('#elapsedtext').set('text', elapsedcounter + 'm')
+  }, 1000)
 }
 mqttConnect()
 function mqttConnect() {   
