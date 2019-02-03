@@ -254,20 +254,33 @@ function onMessageArrived(message) {
   console.log('from:', message.destinationName, message.payloadString) 
   let date = new Date() 
   let elapsedcounter = 0
+  let read = false
   let log = new Composite({
-    top: 'prev() 10', left: 100, right: 100, height: 90,
-    background: 'rgba(0, 0, 255, 0.2)', cornerRadius: 20  
+    top: 'prev() 10', centerX: 0, width: 200, height: 90,
+    background: 'rgba(0, 0, 255, 0.2)', cornerRadius: 10  
   }).on('tap', event => {
     console.log('select')
-    event.target.set('background', 'rgba(255, 0, 0, 0.2)')
-  }).on('swipeRight', event => {
-    console.log('swipeRight')
-    clearInterval(elapsed)
-    event.target.dispose()    
+    read = !read
+    if (read) {
+      event.target.set('background', 'rgba(255, 0, 0, 0.2)')
+    } else {
+      event.target.set('background', 'rgba(0, 0, 255, 0.2)')
+    }    
+  }).on('pan', event => {
+    if (event.state == 'change') {
+      if (Math.abs(event.translationX) > event.target.width) {
+        clearInterval(elapsed)
+        event.target.dispose()
+      } else {
+      event.target.set('transform', {translationX: event.translationX})
+      }
+    } else if (event.state == 'end') {
+      event.target.set('transform', {translationX: 0})
+    }
   }).appendTo(logScroll)
   new TextView({
     id: 'elapsedtext',
-    top: 23, left: 100,
+    top: 5, centerX: 80,
     text: elapsedcounter + 'm',
     alignment: 'left'
   }).appendTo(log)
@@ -292,8 +305,13 @@ function onMessageArrived(message) {
     alignment: 'center', font: '24px'
   }).appendTo(log)    
   let elapsed = setInterval(() => {
+    if (elapsedcounter >= 59) {
+      log.find('#elapsedtext').set('text', '1h+')
+      clearInterval(elapsed)
+    } else {
     elapsedcounter += 1
     log.find('#elapsedtext').set('text', elapsedcounter + 'm')
+    }
   }, 1000)
 }
 mqttConnect()
