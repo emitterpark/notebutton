@@ -15,7 +15,7 @@ let logScroll = new ScrollView({
 }).appendTo(homePage);
 //////////////////////////////
 new Action({  
-  image: {
+  image: {    
     src: device.platform === 'iOS' ? 'resources/share-black-24dp@3x.png' : 'resources/share-white-24dp@3x.png',
     scale: 3
   }
@@ -248,6 +248,16 @@ function createSettings () {
 
 }
 //////////////////////////////
+let u = new Composite({  
+  top: 3, width: 50, height:50, right: 80, 
+  background: 'rgba(255, 0, 0, 0.7)', cornerRadius: 15  
+}).appendTo(ui.contentView)
+let unread = new TextView({
+  centerX: 0, centerY: 0,
+  text: 0, textColor: 'white',
+  alignment: 'center', font: '20px'  
+}).appendTo(u)
+//////////////////////////////
 let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived
 function onMessageArrived(message) {
@@ -256,14 +266,20 @@ function onMessageArrived(message) {
   let logId = (message.payloadString).split('-')[1]
   let logTopic = message.destinationName  
   if (opcode == 'read') {
-    logScroll.find('#'+logId).set('background', 'rgba(255, 0, 0, 0.2)')
+    logScroll.find('#'+logId).set('background', 'rgba(0, 0, 255, 0.1)')
+    unread.text = Number(unread.text) - 1
   } else if (opcode == 'unread') {
-    logScroll.find('#'+logId).set('background', 'rgba(0, 0, 255, 0.2)')
-  } else if (opcode == 'dispose') {    
+    logScroll.find('#'+logId).set('background', 'rgba(255, 0, 0, 0.3)')
+    unread.text = Number(unread.text) + 1
+  } else if (opcode == 'dispose') {
+    if (logScroll.find('#'+logId).get('background') == 'rgba(255, 0, 0, 0.3)') {
+      unread.text = Number(unread.text) - 1 
+    }    
     logScroll.find('#'+logId).dispose()
   } else {
     let logButton = opcode
     createLog(logId, logButton, logTopic)
+    unread.text = Number(unread.text) + 1
   }  
 }
 function createLog(logId, logButton, logTopic) {   
@@ -272,25 +288,28 @@ function createLog(logId, logButton, logTopic) {
   let logread = false
   let log = new Composite({
     id: logId,
-    top: 'prev() 10', centerX: 0, width: 200, height: 90,
-    background: 'rgba(0, 0, 255, 0.2)', cornerRadius: 10  
+    top: 'prev() 10', centerX: 0, width: 300, height: 90,
+    background: 'rgba(255, 0, 0, 0.3)', cornerRadius: 10  
   }).on('longpress', event => {
     if (event.state == 'start') {
       logread = !logread
       if (logread) {
-        event.target.set('background', 'rgba(255, 0, 0, 0.2)')
+        //event.target.set('background', 'rgba(0, 0, 255, 0.1)')
         mqtt.send(logTopic, 'read' + '-' + logId)
       } else {
-        event.target.set('background', 'rgba(0, 0, 255, 0.2)')
+        //event.target.set('background', 'rgba(255, 0, 0, 0.3)')
         mqtt.send(logTopic, 'unread' + '-' + logId)
       }    
     }
   }).on('pan', event => {
     if (event.state == 'change') {
-      if (Math.abs(event.translationX) > event.target.width) {
+      if (Math.abs(event.translationX) > screen.width / 2) {
         clearInterval(logelapsed)
-        mqtt.send(logTopic, 'dispose' + '-' + logId)
+        if (event.target.background == 'rgba(255, 0, 0, 0.3)') {
+          unread.text = Number(unread.text) - 1
+        }
         event.target.dispose()
+        mqtt.send(logTopic, 'dispose' + '-' + logId)        
       } else {
       event.target.set('transform', {translationX: event.translationX})
       }
