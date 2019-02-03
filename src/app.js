@@ -89,14 +89,14 @@ function createSettings () {
     localStorage.setItem('message', event.target.text)    
   }).appendTo(settingsPage)
 
-  let clear = new Button({  
+  new Button({  
     top: 290, left: 8, width: 80,
     text: 'CLEAR'
   }).on('select', event => {    
     localStorage.clear()    
   }).appendTo(settingsPage)
 
-  let download = new Button({  
+  new Button({  
     top: 290, left: 'prev()', width: 105,
     text: 'DOWNLOAD'
   }).on('select', event => {
@@ -142,7 +142,7 @@ function createSettings () {
     })
   }).appendTo(settingsPage)
 
-  let upload = new Button({  
+  new Button({  
     top: 290, left: 'prev()', width: 80,
     text: 'UPLOAD'
   }).on('select', event => { 
@@ -195,7 +195,7 @@ function createSettings () {
     })
   }).appendTo(settingsPage)
 
-  let test = new Button({  
+  new Button({  
     top: 290, left: 'prev()', width: 80,
     text: 'TEST'
   }).on('select', event => {
@@ -252,24 +252,44 @@ let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived
 function onMessageArrived(message) {
   console.log('from:', message.destinationName, message.payloadString) 
-  let date = new Date() 
-  let elapsedcounter = 0
-  let read = false
+  let opcode = (message.payloadString).split('-')[0]
+  let logId = (message.payloadString).split('-')[1]
+  let logTopic = message.destinationName  
+  if (opcode == 'read') {
+    logScroll.find('#'+logId).set('background', 'rgba(255, 0, 0, 0.2)')
+  } else if (opcode == 'unread') {
+    logScroll.find('#'+logId).set('background', 'rgba(0, 0, 255, 0.2)')
+  } else if (opcode == 'dispose') {    
+    logScroll.find('#'+logId).dispose()
+  } else {
+    let logButton = opcode
+    createLog(logId, logButton, logTopic)
+  }  
+}
+function createLog(logId, logButton, logTopic) {   
+  let logDate = new Date() 
+  let logelapsedn = 0
+  let logread = false
   let log = new Composite({
+    id: logId,
     top: 'prev() 10', centerX: 0, width: 200, height: 90,
     background: 'rgba(0, 0, 255, 0.2)', cornerRadius: 10  
-  }).on('tap', event => {
-    console.log('select')
-    read = !read
-    if (read) {
-      event.target.set('background', 'rgba(255, 0, 0, 0.2)')
-    } else {
-      event.target.set('background', 'rgba(0, 0, 255, 0.2)')
-    }    
+  }).on('longpress', event => {
+    if (event.state == 'start') {
+      logread = !logread
+      if (logread) {
+        event.target.set('background', 'rgba(255, 0, 0, 0.2)')
+        mqtt.send(logTopic, 'read' + '-' + logId)
+      } else {
+        event.target.set('background', 'rgba(0, 0, 255, 0.2)')
+        mqtt.send(logTopic, 'unread' + '-' + logId)
+      }    
+    }
   }).on('pan', event => {
     if (event.state == 'change') {
       if (Math.abs(event.translationX) > event.target.width) {
-        clearInterval(elapsed)
+        clearInterval(logelapsed)
+        mqtt.send(logTopic, 'dispose' + '-' + logId)
         event.target.dispose()
       } else {
       event.target.set('transform', {translationX: event.translationX})
@@ -279,41 +299,42 @@ function onMessageArrived(message) {
     }
   }).appendTo(logScroll)
   new TextView({
-    id: 'elapsedtext',
+    id: 'logelapsedtext',
     top: 5, centerX: 80,
-    text: elapsedcounter + 'm',
+    text: logelapsedn + 'm',
     alignment: 'left'
   }).appendTo(log)
   new TextView({
     top: 5, centerX: 0,
-    text: date.toLocaleDateString(),
+    text: logDate.toLocaleDateString(),
     alignment: 'center', textColor: 'gray'
   }).appendTo(log)
   new TextView({
     top: 20, centerX: 0,
-    text: date.toLocaleTimeString().split(' ')[0],
+    text: logDate.toLocaleTimeString().split(' ')[0],
     alignment: 'center', textColor: 'gray'    
   }).appendTo(log)
   new TextView({
     top: 35, centerX: 0,
-    text: message.destinationName,
+    text: logTopic,
     alignment: 'center', textColor: 'gray'
   }).appendTo(log) 
   new TextView({
     top: 50, centerX: 0,
-    text: message.payloadString,
+    text: logButton,
     alignment: 'center', font: '24px'
   }).appendTo(log)    
-  let elapsed = setInterval(() => {
-    if (elapsedcounter >= 59) {
-      log.find('#elapsedtext').set('text', '1h+')
-      clearInterval(elapsed)
+  let logelapsed = setInterval(() => {
+    if (logelapsedn >= 59) {
+      log.find('#logelapsedtext').set('text', '1h+')
+      clearInterval(logelapsed)
     } else {
-    elapsedcounter += 1
-    log.find('#elapsedtext').set('text', elapsedcounter + 'm')
+    logelapsedn += 1
+    log.find('#logelapsedtext').set('text', logelapsedn + 'm')
     }
-  }, 1000)
+  }, 60000)
 }
+
 mqttConnect()
 function mqttConnect() {   
   mqtt.connect({onSuccess:onConnect})
