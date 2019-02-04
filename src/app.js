@@ -16,8 +16,8 @@ let logScroll = new ScrollView({
 //////////////////////////////
 new Action({  
   image: {    
-    src: device.platform === 'iOS' ? 'resources/share-black-24dp@3x.png' : 'resources/share-white-24dp@3x.png',
-    scale: 3
+    src: 'images/menu.png',
+    scale: 1
   }
 }).on('select', () => {
   createSettings()
@@ -248,15 +248,19 @@ function createSettings () {
 
 }
 //////////////////////////////
-let u = new Composite({  
-  top: 3, width: 50, height:50, right: 80, 
-  background: 'rgba(255, 0, 0, 0.7)', cornerRadius: 15  
-}).appendTo(ui.contentView)
-let unread = new TextView({
-  centerX: 0, centerY: 0,
+let unread = new TextView({  
+  top: 15, right: 60, width: 50,
+  background: 'red', cornerRadius: 5,  
   text: 0, textColor: 'white',
   alignment: 'center', font: '20px'  
-}).appendTo(u)
+}).appendTo(ui.contentView)
+//////////////////////////////
+
+cordova.plugins.notification.local.schedule({
+  title: 'My first notification',
+  text: 'Thats pretty easy...',
+  foreground: true
+});
 //////////////////////////////
 let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived

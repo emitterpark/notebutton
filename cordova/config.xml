@@ -9,3 +9,5 @@
   </author>
   <preference name="EnableDeveloperConsole" value="$IS_DEBUG" />
 </widget>
+
+<plugin name="cordova-plugin-local-notification" spec="^0.9.0-beta.2" />
