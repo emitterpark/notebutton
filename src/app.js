@@ -2,7 +2,8 @@ const {Action,NavigationView,ScrollView,Page,Button,TextInput,TextView,Composite
 const Paho = require('paho-mqtt')
 //////////////////////////////
 let navigationView = new NavigationView({
-  left: 0, top: 0, right: 0, bottom: 0
+  left: 0, top: 0, right: 0, bottom: 0,
+  toolbarColor: 'black'
 }).appendTo(ui.contentView)
 //////////////////////////////
 let homePage = new Page({
@@ -31,7 +32,7 @@ function createSettings () {
   
   new TextView({
     top: 35, left:10, 
-    text: 'SSID',
+    text: 'WiFi ssid',
     textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
@@ -46,7 +47,7 @@ function createSettings () {
   
   new TextView({
     top: 95, left:10,  
-    text: 'Password',
+    text: 'WiFi password',
     textColor: 'gray', font: '16px'
   }).appendTo(settingsPage)
   
@@ -255,13 +256,6 @@ let unread = new TextView({
   alignment: 'center', font: '20px'  
 }).appendTo(ui.contentView)
 //////////////////////////////
-
-cordova.plugins.notification.local.schedule({
-  title: 'My first notification',
-  text: 'Thats pretty easy...',
-  foreground: true
-});
-//////////////////////////////
 let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived
 function onMessageArrived(message) {
@@ -284,6 +278,12 @@ function onMessageArrived(message) {
     let logButton = opcode
     createLog(logId, logButton, logTopic)
     unread.text = Number(unread.text) + 1
+    cordova.plugins.notification.local.schedule({
+      title: logTopic,
+      text: logButton,
+      foreground: true,
+      vibrate: true     
+    })
   }  
 }
 function createLog(logId, logButton, logTopic) {   
