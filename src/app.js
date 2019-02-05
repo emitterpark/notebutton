@@ -258,6 +258,7 @@ let unread = new TextView({
 //////////////////////////////
 let mqtt = new Paho.Client('iot.eclipse.org', 80, '/ws', '')
 mqtt.onMessageArrived = onMessageArrived
+mqtt.onConnectionLost = onConnectionLost
 function onMessageArrived(message) {
   console.log('from:', message.destinationName, message.payloadString) 
   let opcode = (message.payloadString).split('-')[0]
@@ -357,11 +358,18 @@ function createLog(logId, logButton, logTopic) {
     }
   }, 60000)
 }
-
 mqttConnect()
 function mqttConnect() {   
-  mqtt.connect({onSuccess:onConnect})
+  mqtt.connect({
+    onSuccess:onConnect
+    //reconnect: true,
+    //timeout: 3600,
+    //keepAliveInterval: 3600
+  })
   function onConnect() {
     mqtt.subscribe(localStorage.getItem('topic'))      
   }
+}
+function onConnectionLost() {
+  mqttConnect()
 }
